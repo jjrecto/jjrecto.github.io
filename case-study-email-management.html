@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en"
+  x-data="{
+    dark: localStorage.getItem('theme')==='dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches),
+    mm: false,
+    sc: false,
+    progress: 0
+  }"
+  :class="{'dark':dark}"
+  x-init="
+    $watch('dark', v => localStorage.setItem('theme', v ? 'dark' : 'light'));
+    window.addEventListener('scroll', () => {
+      sc = window.scrollY > 20;
+      progress = Math.min(100, Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100));
+    }, { passive: true });
+  "
+  class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Jon">
+  <meta name="description" content="AI Email Assistant that automates inbox management, drafts replies, and saves hours every week — built with n8n, Gmail, Telegram, and Groq AI.">
+  <meta property="og:title" content="AI Email Assistant That Automates Inbox Management · Case Study by Jon">
+  <meta property="og:type" content="article">
+  <title>AI Email Assistant · Inbox Automation Case Study by Jon</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { display: ['PT Sans','sans-serif'], body: ['DM Sans','sans-serif'] },
+          colors: { accent: '#FF6B2B', 'accent-light': '#FF8F5C' }
+        }
+      }
+    }
+  </script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{font-family:'DM Sans',sans-serif}
+    h1,h2,h3,h4,h5,h6{font-family:'PT Sans',sans-serif}
+    body{transition:background-color .3s,color .3s}
+    body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E")}
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#FF6B2B;border-radius:99px}
+    .reveal{opacity:0;transform:translateY(26px);transition:opacity .6s cubic-bezier(.4,0,.2,1),transform .6s cubic-bezier(.4,0,.2,1)}
+    .reveal.in{opacity:1;transform:none}
+    .d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}.d4{transition-delay:.32s}
+    .nl{position:relative}
+    .nl::after{content:'';position:absolute;bottom:-2px;left:0;width:0;height:1.5px;background:currentColor;transition:width .22s cubic-bezier(.4,0,.2,1)}
+    .nl:hover::after{width:100%}
+    .shimmer{position:relative;overflow:hidden}
+    .shimmer::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:rgba(255,255,255,.18);transform:skewX(-20deg);transition:left .4s cubic-bezier(.4,0,.2,1)}
+    .shimmer:hover::after{left:160%}
+    .pf{overflow:hidden;background:#d4d4d8}
+    .pf img{width:100%;height:100%;object-fit:cover;display:block}
+    .card-h{transition:transform .28s cubic-bezier(.4,0,.2,1),border-color .18s}
+    .card-h:hover{transform:translateY(-4px)}
+    [x-cloak]{display:none!important}
+    .progress-bar{position:fixed;top:0;left:0;height:3px;background:#FF6B2B;z-index:100;transition:width .1s linear}
+    .prose-cs h2{font-family:'PT Sans',sans-serif;font-size:1.55rem;font-weight:700;margin:2.75rem 0 1rem;line-height:1.25}
+    .prose-cs h3{font-family:'PT Sans',sans-serif;font-size:1.15rem;font-weight:700;margin:2rem 0 .6rem;line-height:1.3;color:#FF6B2B}
+    .prose-cs p{margin:0 0 1.4rem;line-height:1.82;color:#52525b}
+    .dark .prose-cs p{color:#a1a1aa}
+    .prose-cs ul{margin:0 0 1.4rem 1.5rem;list-style:disc}
+    .prose-cs li{margin-bottom:.45rem;line-height:1.7;color:#52525b}
+    .dark .prose-cs li{color:#a1a1aa}
+    .prose-cs blockquote{border-left:3px solid #FF6B2B;padding:.75rem 1.25rem;margin:0 0 1.8rem;background:#fff7f4;border-radius:0 8px 8px 0}
+    .dark .prose-cs blockquote{background:#27272a}
+    .prose-cs blockquote p{color:#52525b;font-style:italic;margin:0}
+    .dark .prose-cs blockquote p{color:#a1a1aa}
+    .prose-cs hr{border:none;border-top:1px solid #e4e4e7;margin:2.5rem 0}
+    .dark .prose-cs hr{border-top-color:#27272a}
+    .prose-cs a{color:#FF6B2B;text-decoration:underline;text-underline-offset:3px}
+    .stat-card{border-left:3px solid #FF6B2B}
+    .step-badge{width:2rem;height:2rem;min-width:2rem;border-radius:50%;background:#FF6B2B;color:#fff;font-family:'PT Sans',sans-serif;font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center}
+
+    /* Flow blocks */
+    .flow-block{border:1px solid #e4e4e7;border-radius:16px;overflow:hidden;margin-bottom:2.5rem}
+    .dark .flow-block{border-color:#27272a}
+    .flow-header{display:flex;align-items:center;gap:1rem;padding:1.25rem 1.5rem}
+    .flow-header.f1{background:#0f2d1a}
+    .flow-header.f2{background:#1a1a2e}
+    .flow-header.f3{background:#2d1a00}
+    .flow-header.f4{background:#2d0000}
+    .flow-badge{font-family:'PT Sans',sans-serif;font-weight:700;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;padding:.25rem .75rem;border-radius:99px;background:#FF6B2B;color:#fff}
+    .flow-meta{font-size:.78rem;color:#a1a1aa}
+    .flow-screenshot{width:100%;display:block;border-top:1px solid #e4e4e7}
+    .dark .flow-screenshot{border-top-color:#27272a}
+    .flow-body{padding:1.5rem;background:#fff}
+    .dark .flow-body{background:#09090b}
+
+    /* Screenshot placeholder */
+    .img-ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;background:repeating-linear-gradient(135deg,#f4f4f5 0 10px,#ececec 10px 20px);color:#a1a1aa;font-size:.8rem;border-top:1px solid #e4e4e7;padding:3rem 1rem;text-align:center}
+    .dark .img-ph{background:repeating-linear-gradient(135deg,#27272a 0 10px,#1f1f22 10px 20px);border-top-color:#27272a;color:#52525b}
+    .img-ph svg{width:32px;height:32px;opacity:.35;margin-bottom:.25rem}
+
+    /* Action pills */
+    .action-pill{display:inline-flex;align-items:center;gap:.4rem;font-size:.78rem;font-weight:500;padding:.3rem .75rem;border-radius:99px;border:1px solid}
+    .pill-green{color:#16a34a;border-color:#bbf7d0;background:#f0fdf4}
+    .pill-yellow{color:#b45309;border-color:#fde68a;background:#fffbeb}
+    .pill-red{color:#dc2626;border-color:#fecaca;background:#fef2f2}
+    .dark .pill-green{color:#4ade80;border-color:#166534;background:#052e16}
+    .dark .pill-yellow{color:#fbbf24;border-color:#78350f;background:#1c1007}
+    .dark .pill-red{color:#f87171;border-color:#991b1b;background:#1c0606}
+
+    /* Output showcases */
+    .output-section{margin:1.5rem 0 0;padding:1.25rem;background:#f9f9f9;border-radius:12px;border:1px solid #e4e4e7}
+    .dark .output-section{background:#111113;border-color:#27272a}
+    .output-label{display:inline-flex;align-items:center;gap:.4rem;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#FF6B2B;margin-bottom:.85rem}
+    .output-label svg{width:13px;height:13px}
+    .output-grid{display:grid;gap:.85rem}
+    .output-grid.cols-2{grid-template-columns:1fr 1fr}
+    @media(max-width:600px){.output-grid.cols-2{grid-template-columns:1fr}}
+    .output-img-wrap{border-radius:8px;overflow:hidden;border:1px solid #e4e4e7;background:#000}
+    .dark .output-img-wrap{border-color:#27272a}
+    .output-img-wrap img{width:100%;display:block}
+    .output-caption{font-size:.72rem;color:#a1a1aa;margin-top:.4rem;text-align:center}
+    .output-note{font-size:.78rem;color:#71717a;line-height:1.65;margin-top:.85rem;padding-top:.75rem;border-top:1px solid #e4e4e7}
+    .dark .output-note{color:#52525b;border-top-color:#27272a}
+
+    /* Label chips */
+    .label-chip{display:inline-flex;align-items:center;gap:.35rem;font-size:.72rem;font-weight:500;padding:.22rem .65rem;border-radius:99px;border:1px solid;white-space:nowrap}
+
+    /* Flow accordion */
+    .flow-header{cursor:pointer;user-select:none}
+    .flow-header:hover{filter:brightness(1.12)}
+    .flow-toggle-icon{margin-left:auto;flex-shrink:0;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+    .flow-toggle-icon.open{transform:rotate(180deg)}
+    .flow-collapsible{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s cubic-bezier(.4,0,.2,1)}
+    .flow-collapsible.open{grid-template-rows:1fr}
+    .flow-collapsible-inner{overflow:hidden}
+  </style>
+</head>
+
+<body class="bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased">
+
+  <div class="progress-bar" :style="`width:${progress}%`"
+    role="progressbar" :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100" aria-label="Reading progress"></div>
+
+  <header class="fixed inset-x-0 top-0.5 z-50 transition-all duration-300"
+    :class="sc ? 'bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md shadow-sm shadow-black/5' : 'bg-transparent'">
+    <nav class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between" aria-label="Main navigation">
+      <a href="index.html" class="font-display font-bold text-xl tracking-tight relative z-10">
+        <span class="text-zinc-900 dark:text-white">jon</span><span class="text-accent">jeous</span>
+      </a>
+      <ul class="hidden md:flex items-center gap-8 text-sm" role="list">
+        <li><a href="index.html#services" class="nl text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">Services</a></li>
+        <li><a href="projects.html" class="nl text-accent font-medium">Work</a></li>
+        <li><a href="index.html#about" class="nl text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">About</a></li>
+        <li><a href="index.html#contact" class="nl text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors">Contact</a></li>
+      </ul>
+      <div class="flex items-center gap-3">
+        <button @click="dark=!dark"
+          class="w-9 h-9 flex items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+          :aria-label="dark ? 'Light mode' : 'Dark mode'">
+          <svg x-show="!dark" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+          <svg x-show="dark" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+        </button>
+        <a href="index.html#contact" class="hidden md:inline-flex items-center gap-2 shimmer bg-accent text-white text-sm font-medium px-5 py-2 rounded-full hover:bg-accent-light transition-colors">Hire me →</a>
+        <button @click="mm=!mm" class="md:hidden w-9 h-9 flex items-center justify-center rounded-full border border-zinc-200 dark:border-zinc-800" :aria-expanded="mm" aria-label="Toggle menu">
+          <svg x-show="!mm" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <svg x-show="mm" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </nav>
+    <div x-show="mm" x-cloak
+      x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0"
+      x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2"
+      class="md:hidden bg-white dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-900">
+      <ul class="flex flex-col px-6 py-5 gap-4 text-sm font-medium" role="list">
+        <li><a href="index.html#services" @click="mm=false" class="block text-zinc-700 dark:text-zinc-300 hover:text-accent transition-colors">Services</a></li>
+        <li><a href="projects.html" @click="mm=false" class="block text-accent">Work</a></li>
+        <li><a href="index.html#about" @click="mm=false" class="block text-zinc-700 dark:text-zinc-300 hover:text-accent transition-colors">About</a></li>
+        <li><a href="index.html#contact" @click="mm=false" class="block text-zinc-700 dark:text-zinc-300 hover:text-accent transition-colors">Contact</a></li>
+        <li class="pt-2 border-t border-zinc-100 dark:border-zinc-900">
+          <a href="index.html#contact" @click="mm=false" class="inline-flex shimmer bg-accent text-white font-medium text-sm px-5 py-2.5 rounded-full">Hire me →</a>
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <main>
+    <article>
+
+      <!-- HEADER / HERO -->
+      <header class="pt-32 pb-10 max-w-4xl mx-auto px-6">
+        <a href="projects.html" class="inline-flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-accent transition-colors mb-8">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18"/></svg>
+          Back to projects
+        </a>
+        <div class="flex flex-wrap items-center gap-3 mb-6">
+          <span class="text-xs bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-transparent px-3 py-1 rounded-full hover:text-orange-500 hover:border-orange-500 transition-all duration-300 cursor-default">Workflow Automation</span>
+          <span class="text-xs bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-transparent px-3 py-1 rounded-full hover:text-orange-500 hover:border-orange-500 transition-all duration-300 cursor-default">AI Assistant</span>
+          <span class="text-xs bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-transparent px-3 py-1 rounded-full hover:text-orange-500 hover:border-orange-500 transition-all duration-300 cursor-default">Inbox Management</span>
+          <span class="text-xs text-zinc-400 ml-1">2026</span>
+        </div>
+        <h1 class="reveal font-display font-bold text-4xl md:text-5xl lg:text-6xl text-zinc-900 dark:text-white leading-tight mb-6">
+          AI Email Assistant That Automates Inbox Management and Saves Hours Every Week
+        </h1>
+        <p class="reveal d1 text-xl text-zinc-500 dark:text-zinc-400 leading-relaxed mb-10 max-w-2xl">
+          Stop spending hours sorting, prioritizing, and writing emails. This AI-powered system handles your inbox automatically — classifying every email, drafting replies, and delivering a morning summary — while you stay in full control.
+        </p>
+
+        <!-- IMPACT METRICS -->
+        <div class="reveal d2 grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+          <div class="stat-card bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6 pl-7">
+            <p class="font-display font-bold text-3xl text-zinc-900 dark:text-white mb-1">100%</p>
+            <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Inbox management automated</p>
+          </div>
+          <div class="stat-card bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6 pl-7">
+            <p class="font-display font-bold text-3xl text-zinc-900 dark:text-white mb-1">5 min</p>
+            <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Faster email response handling</p>
+          </div>
+          <div class="stat-card bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6 pl-7">
+            <p class="font-display font-bold text-3xl text-zinc-900 dark:text-white mb-1">80%+</p>
+            <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">Reduction in manual email work</p>
+          </div>
+        </div>
+
+        <div class="reveal d2 grid grid-cols-2 md:grid-cols-4 gap-4 py-8 border-t border-b border-zinc-100 dark:border-zinc-900">
+          <div>
+            <p class="text-xs text-zinc-400 uppercase tracking-widest mb-1">Client</p>
+            <p class="font-medium text-zinc-900 dark:text-white text-sm">Personal Project</p>
+          </div>
+          <div>
+            <p class="text-xs text-zinc-400 uppercase tracking-widest mb-1">Role</p>
+            <p class="font-medium text-zinc-900 dark:text-white text-sm">AI Automation Specialist</p>
+          </div>
+          <div>
+            <p class="text-xs text-zinc-400 uppercase tracking-widest mb-1">Timeline</p>
+            <p class="font-medium text-zinc-900 dark:text-white text-sm">2026</p>
+          </div>
+          <div>
+            <p class="text-xs text-zinc-400 uppercase tracking-widest mb-1">Tools</p>
+            <p class="font-medium text-zinc-900 dark:text-white text-sm">n8n · Gmail · Telegram · Groq · Google Sheets</p>
+          </div>
+        </div>
+      </header>
+
+      <!-- HERO IMAGE -->
+      <div class="max-w-6xl mx-auto px-6 mb-16">
+        <div class="reveal pf w-full h-72 md:h-[480px] rounded-3xl">
+          <img src="assets/images/proj1.png" alt="AI Email Management System — workflow overview" loading="eager">
+        </div>
+      </div>
+
+      <!-- THE PROBLEM -->
+      <div class="max-w-3xl mx-auto px-6 pb-4 prose-cs">
+        <h2>The Problem: Email Is Eating Your Day</h2>
+        <p>For most business owners and professionals, the inbox has become a second job. You check it constantly, respond to the same types of messages over and over, and still feel like you're always behind. The result? Lost focus, missed opportunities, and hours of your week spent on low-value tasks.</p>
+        <p>Sound familiar?</p>
+        <ul>
+          <li>You check your inbox multiple times a day, interrupting deep work</li>
+          <li>Important emails get buried under newsletters, receipts, and spam</li>
+          <li>You write similar replies repeatedly — from your own memory every time</li>
+          <li>Follow-ups fall through the cracks because there's no system</li>
+          <li>Spam keeps building up, cluttering your view of what actually matters</li>
+          <li>Decision fatigue sets in before the real work even begins</li>
+        </ul>
+        <blockquote>
+          <p>"I used to spend over 2 hours a day just dealing with email. Now I get a morning briefing on Telegram, approve a few AI-drafted replies, and I'm done."</p>
+        </blockquote>
+
+        <h2>The Solution: An AI Assistant for Your Inbox</h2>
+        <p>This automation system works like a dedicated inbox assistant running 24/7 in the background. It reads every incoming email, figures out what it is and what action it needs, drafts a reply if required, and sends you a simple notification to approve, edit, or skip. You stay in control — without spending time on the manual work.</p>
+        <p>Every morning, you get a clean briefing of what happened overnight. Every night, your spam folder is cleared automatically. Your inbox stays organized without you lifting a finger.</p>
+      </div>
+
+      <!-- BEFORE VS AFTER -->
+      <div class="max-w-3xl mx-auto px-6 pb-12">
+        <div class="reveal rounded-3xl overflow-hidden border border-zinc-100 dark:border-zinc-800">
+          <div class="grid md:grid-cols-2">
+            <!-- BEFORE -->
+            <div class="p-8 bg-zinc-50 dark:bg-zinc-900">
+              <p class="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-5">Before Automation</p>
+              <ul class="space-y-4">
+                <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+                  <svg class="w-4 h-4 text-zinc-300 dark:text-zinc-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  Check inbox repeatedly throughout the day
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+                  <svg class="w-4 h-4 text-zinc-300 dark:text-zinc-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  Write every response manually from scratch
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+                  <svg class="w-4 h-4 text-zinc-300 dark:text-zinc-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  Sort and label emails by hand
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+                  <svg class="w-4 h-4 text-zinc-300 dark:text-zinc-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  Manually delete spam as it accumulates
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+                  <svg class="w-4 h-4 text-zinc-300 dark:text-zinc-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  No daily overview — always guessing what needs attention
+                </li>
+              </ul>
+            </div>
+            <!-- AFTER -->
+            <div class="p-8 bg-white dark:bg-zinc-950 border-t md:border-t-0 md:border-l border-zinc-100 dark:border-zinc-800">
+              <p class="text-xs font-bold uppercase tracking-widest text-accent mb-5">After Automation</p>
+              <ul class="space-y-4">
+                <li class="flex items-start gap-3 text-sm text-zinc-700 dark:text-zinc-300">
+                  <svg class="w-4 h-4 text-accent flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  AI categorizes every email automatically, 24/7
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-700 dark:text-zinc-300">
+                  <svg class="w-4 h-4 text-accent flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  AI drafts context-aware replies for your review
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-700 dark:text-zinc-300">
+                  <svg class="w-4 h-4 text-accent flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  One-tap approve, edit, or reject via Telegram
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-700 dark:text-zinc-300">
+                  <svg class="w-4 h-4 text-accent flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  Spam deleted automatically every night
+                </li>
+                <li class="flex items-start gap-3 text-sm text-zinc-700 dark:text-zinc-300">
+                  <svg class="w-4 h-4 text-accent flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                  Daily morning briefing delivered to your phone
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HOW IT WORKS -->
+      <div class="max-w-3xl mx-auto px-6 pb-12 prose-cs">
+        <h2>How It Works — 4 Simple Steps</h2>
+        <p>The entire system runs quietly in the background. Here's what happens every time a new email arrives:</p>
+      </div>
+      <div class="max-w-3xl mx-auto px-6 pb-12">
+        <div class="reveal grid md:grid-cols-4 gap-4">
+          <div class="bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6 border border-zinc-100 dark:border-zinc-800">
+            <div class="step-badge mb-4">1</div>
+            <p class="font-display font-bold text-sm text-zinc-900 dark:text-white mb-2">Email Arrives</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">A new message lands in your inbox. The system detects it within minutes.</p>
+          </div>
+          <div class="bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6 border border-zinc-100 dark:border-zinc-800">
+            <div class="step-badge mb-4">2</div>
+            <p class="font-display font-bold text-sm text-zinc-900 dark:text-white mb-2">AI Analyzes &amp; Organizes</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">The AI reads the email, assigns a category, and drafts a reply if one is needed.</p>
+          </div>
+          <div class="bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6 border border-zinc-100 dark:border-zinc-800">
+            <div class="step-badge mb-4">3</div>
+            <p class="font-display font-bold text-sm text-zinc-900 dark:text-white mb-2">You Get a Notification</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">A Telegram message arrives with a summary of the email and the AI-drafted reply.</p>
+          </div>
+          <div class="bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6 border border-zinc-100 dark:border-zinc-800">
+            <div class="step-badge mb-4">4</div>
+            <p class="font-display font-bold text-sm text-zinc-900 dark:text-white mb-2">Approve, Edit, or Reject</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">Tap one button. The system handles the rest — or saves the email for your manual review.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- KEY FEATURES -->
+      <div class="max-w-3xl mx-auto px-6 pb-4 prose-cs">
+        <h2>Key Features</h2>
+        <p>Everything you need to reclaim your time from email — without losing control of your communication.</p>
+      </div>
+      <div class="max-w-3xl mx-auto px-6 pb-12">
+        <div class="reveal grid md:grid-cols-2 gap-4">
+          <div class="card-h bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6 border border-zinc-100 dark:border-zinc-800">
+            <div class="w-9 h-9 rounded-xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center mb-4">
+              <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+            </div>
+            <p class="font-display font-bold text-sm text-zinc-900 dark:text-white mb-2">AI Email Classification</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">Automatically identifies what every email is — urgent, follow-up, receipt, delegated, or spam — and keeps your inbox structured without any manual sorting.</p>
+          </div>
+          <div class="card-h bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6 border border-zinc-100 dark:border-zinc-800">
+            <div class="w-9 h-9 rounded-xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center mb-4">
+              <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            </div>
+            <p class="font-display font-bold text-sm text-zinc-900 dark:text-white mb-2">Smart Reply Drafting</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">Generates context-aware, professional replies based on the email content. You review and approve — no writing from scratch required.</p>
+          </div>
+          <div class="card-h bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6 border border-zinc-100 dark:border-zinc-800">
+            <div class="w-9 h-9 rounded-xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center mb-4">
+              <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <p class="font-display font-bold text-sm text-zinc-900 dark:text-white mb-2">Human Approval Workflow</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">No email is ever sent without your say. Every AI draft goes through a one-tap Telegram approval step, keeping you fully in control at all times.</p>
+          </div>
+          <div class="card-h bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6 border border-zinc-100 dark:border-zinc-800">
+            <div class="w-9 h-9 rounded-xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center mb-4">
+              <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+            </div>
+            <p class="font-display font-bold text-sm text-zinc-900 dark:text-white mb-2">Daily Executive Summary</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">Every morning at 8 AM, a concise briefing lands in your Telegram — covering urgent items, follow-ups, and a full AI-generated overview of the previous day.</p>
+          </div>
+          <div class="card-h bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-6 border border-zinc-100 dark:border-zinc-800 md:col-span-2">
+            <div class="w-9 h-9 rounded-xl bg-orange-50 dark:bg-zinc-800 flex items-center justify-center mb-4">
+              <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </div>
+            <p class="font-display font-bold text-sm text-zinc-900 dark:text-white mb-2">Automated Spam Cleanup</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">Every night, the system silently purges spam from your inbox and sends a short report confirming what was removed. Your inbox stays clean without any manual effort.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYSTEM WORKFLOWS (retitled) -->
+      <div class="max-w-3xl mx-auto px-6 pb-4 prose-cs">
+        <h2>Under the Hood — See It in Action</h2>
+        <p>Each automation runs independently so nothing interferes with anything else. Click any workflow below to see exactly what it does.</p>
+      </div>
+
+      <!-- ═══ FLOW BLOCKS ═══ -->
+      <div class="max-w-3xl mx-auto px-6 pb-4" x-data="flowAccordion">
+
+        <!-- FLOW 1 -->
+        <div class="flow-block reveal">
+          <div class="flow-header f1" @click="toggleFlow(1)" :aria-expanded="isOpen(1)">
+            <span class="flow-badge">Flow 1</span>
+            <div>
+              <p class="font-display font-bold text-sm text-white">Email Watcher — Reads &amp; Organizes Your Inbox</p>
+              <p class="flow-meta">Runs every 5 minutes · Reads new emails → AI classifies → Labels → Notifies you</p>
+            </div>
+            <svg class="flow-toggle-icon w-5 h-5 text-white/70" :class="isOpen(1) ? 'open' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </div>
+          <div class="flow-collapsible" :class="isOpen(1) ? 'open' : ''"><div class="flow-collapsible-inner">
+          <img
+            class="flow-screenshot w-full rounded-2xl border border-zinc-200 dark:border-zinc-800"
+            src="assets/images/FLOW1.jpeg"
+            alt="Flow 1 - Email Watcher Workflow"
+            loading="lazy"
+          />
+          <div class="flow-body">
+            <p class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">The core flow runs around the clock. Every 5 minutes it fetches unread Gmail messages, passes each through a Groq AI Agent for classification, applies the appropriate Gmail label, logs everything to Google Sheets, and — if a reply is needed — fires a Telegram notification with the AI-generated draft.</p>
+            <p class="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">Steps</p>
+            <ol class="space-y-2 mb-5">
+              <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400"><span class="step-badge mt-0.5">1</span>Schedule Trigger fires every 5 minutes</li>
+              <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400"><span class="step-badge mt-0.5">2</span>Gmail — Get Messages fetches all unread emails</li>
+              <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400"><span class="step-badge mt-0.5">3</span>Groq AI Agent classifies each email and generates a draft reply if needed</li>
+              <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400"><span class="step-badge mt-0.5">4</span>Code node parses the agent's structured output</li>
+              <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400"><span class="step-badge mt-0.5">5</span>If SPAM → mark as spam and read; otherwise → apply label + mark read</li>
+              <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400"><span class="step-badge mt-0.5">6</span>Google Sheets logs the full email record</li>
+              <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400"><span class="step-badge mt-0.5">7</span>Filter checks if a reply is needed → Telegram sends notification with draft</li>
+            </ol>
+
+            <!-- LABEL SHOWCASE -->
+            <div class="output-section">
+              <p class="output-label">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                Gmail labels applied by the AI
+              </p>
+              <p class="text-xs text-zinc-500 dark:text-zinc-500 mb-3 leading-relaxed">The AI Agent assigns one label per email based on its classification. Labels are created in Gmail once during setup and reused on every run.</p>
+              <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1rem;">
+                <span class="label-chip" style="background:#fef9c3;color:#854d0e;border-color:#fde68a;">⚡ Needs Action</span>
+                <span class="label-chip" style="background:#dbeafe;color:#1e40af;border-color:#bfdbfe;">📩 AI-Processed</span>
+                <span class="label-chip" style="background:#dcfce7;color:#166534;border-color:#bbf7d0;">↩ Follow-up</span>
+                <span class="label-chip" style="background:#e0e7ff;color:#3730a3;border-color:#c7d2fe;">🤝 Delegated</span>
+                <span class="label-chip" style="background:#fce7f3;color:#9d174d;border-color:#fbcfe8;">🧾 Receipts</span>
+                <span class="label-chip" style="background:#fee2e2;color:#991b1b;border-color:#fecaca;">🗑 Spam-AI</span>
+              </div>
+
+
+              <div class="output-img-wrap">
+                <img
+                  src="assets/images/GMAIL-LABEL.png"
+                  alt="Gmail Labels Tagged"
+                  class="w-full rounded-b-2xl object-cover"
+                  loading="lazy"
+                />
+                <p class="output-caption">Inbox view — emails tagged with AI-assigned labels</p>
+              </div>
+              <p class="output-note">💡 Every processed email is automatically tagged with an <strong>AI-Processed</strong> label and marked as read. This prevents the same email from being analyzed again during future automation cycles and avoids duplicate processing.</p>
+            </div>
+
+            <!-- GSHEETS LOG SHOWCASE -->
+            <div class="output-section" style="margin-top:1rem;">
+              <p class="output-label">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+                Google Sheets — email activity log
+              </p>
+              <p class="text-xs text-zinc-500 dark:text-zinc-500 mb-4 leading-relaxed">Every email processed by Flow 1 is appended as a new row in Google Sheets. This log is the shared memory of the entire system — Flow 2 reads it to find thread IDs when sending replies, and Flow 3 reads it every morning to build the briefing.</p>
+
+              <!-- Column legend -->
+              <p class="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">Columns logged per email</p>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.4rem;margin-bottom:1.25rem;">
+                <span style="font-size:.72rem;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:.2rem .55rem;border-radius:6px;font-family:monospace;">Timestamp</span>
+                <span style="font-size:.72rem;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:.2rem .55rem;border-radius:6px;font-family:monospace;">Email ID</span>
+                <span style="font-size:.72rem;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:.2rem .55rem;border-radius:6px;font-family:monospace;">Thread ID</span>
+                <span style="font-size:.72rem;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:.2rem .55rem;border-radius:6px;font-family:monospace;">From</span>
+                <span style="font-size:.72rem;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:.2rem .55rem;border-radius:6px;font-family:monospace;">Subject</span>
+                <span style="font-size:.72rem;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:.2rem .55rem;border-radius:6px;font-family:monospace;">Category</span>
+                <span style="font-size:.72rem;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:.2rem .55rem;border-radius:6px;font-family:monospace;">Summary</span>
+                <span style="font-size:.72rem;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:.2rem .55rem;border-radius:6px;font-family:monospace;">AI Draft</span>
+                <span style="font-size:.72rem;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:.2rem .55rem;border-radius:6px;font-family:monospace;">Needs Reply</span>
+                <span style="font-size:.72rem;background:#fef9c3;color:#854d0e;border:1px solid #fde68a;padding:.2rem .55rem;border-radius:6px;font-family:monospace;">Status</span>
+              </div>
+
+              <div class="output-grid" style="grid-template-columns:1fr;">
+              <div class="output-img-wrap">
+                <img
+                  src="assets/images/GSHEET LOG.png"
+                  alt="Gmail Labels Created by AI"
+                  class="w-full rounded-b-2xl object-cover"
+                  loading="lazy"
+                />
+                <p class="output-caption">Google Sheets log — one row per processed email with full metadata</p>
+              </div>
+              </div>
+              <p class="output-note">💡 The <code style="font-size:.75rem;background:#f4f4f5;padding:.1rem .3rem;border-radius:4px;color:#FF6B2B;">Status</code> column is the handoff point between flows — Flow 1 writes <em>Drafted</em>, Flow 2 updates it to <em>sent</em>, <em>editing</em>, or <em>rejected</em> after the user taps a button on Telegram.</p>
+            </div>
+
+          </div><!-- end flow-body -->
+          </div></div><!-- end flow-collapsible-inner + flow-collapsible -->
+        </div><!-- end flow-block flow 1 -->
+
+        <!-- FLOW 2 -->
+        <div class="flow-block reveal">
+          <div class="flow-header f2" @click="toggleFlow(2)" :aria-expanded="isOpen(2)">
+            <span class="flow-badge">Flow 2</span>
+            <div>
+              <p class="font-display font-bold text-sm text-white">Approval Handler — Your One-Tap Reply Control</p>
+              <p class="flow-meta">Triggered by your Telegram button tap · Approve / Edit / Reject</p>
+            </div>
+            <svg class="flow-toggle-icon w-5 h-5 text-white/70" :class="isOpen(2) ? 'open' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </div>
+          <div class="flow-collapsible" :class="isOpen(2) ? 'open' : ''"><div class="flow-collapsible-inner">
+          <img
+            class="flow-screenshot w-full rounded-2xl border border-zinc-200 dark:border-zinc-800"
+            src="assets/images/FLOW2.jpeg"
+            alt="Flow 2 - User Control"
+            loading="lazy"
+          />
+          <div class="flow-body">
+            <p class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">This flow is what makes the system safe to use. It listens for Telegram callback queries (button taps) and routes the decision through a Switch node — executing the right action for each choice before confirming back to Telegram.</p>
+            <p class="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">User actions</p>
+            <div class="flex flex-wrap gap-2 mb-4">
+              <span class="action-pill pill-green">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                Accept — looks up thread ID, replies, updates Sheets, confirms on Telegram
+              </span>
+              <span class="action-pill pill-yellow">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Edit — marks "Editing" in Sheets, requests manual review via Telegram
+              </span>
+              <span class="action-pill pill-red">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                Reject — marks "Rejected" in Sheets, sends rejection notification
+              </span>
+            </div>
+
+            <!-- TELEGRAM OUTPUT SHOWCASE -->
+
+            <!-- Section 1: The notification itself -->
+            <div class="output-section">
+              <p class="output-label">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                Output example — Telegram approval notification
+              </p>
+              <p class="text-xs text-zinc-500 dark:text-zinc-500 mb-3 leading-relaxed">When Flow 1 detects an email that needs a reply, it fires this Telegram message. It contains the sender, subject, AI category, a plain-language summary, and the full AI-drafted reply — with inline buttons at the bottom for instant action.</p>
+              <div class="output-img-wrap" style="max-width:420px;margin:0 auto;">
+                <img
+                  src="assets/images/Sample TG Notification.png"
+                  alt="Telegram notification showing email summary, AI draft reply, and Accept / Edit / Reject inline buttons"
+                  loading="lazy"
+                  style="width:100%;display:block;"
+                />
+              </div>
+              <p class="output-caption">Incoming notification — AI summary + draft reply + action buttons</p>
+              <p class="output-note">💡 Only emails where the AI determines a reply is needed trigger this notification. Newsletters, receipts, and spam are labeled and logged silently without disturbing the user.</p>
+            </div>
+
+            <!-- Section 2: The three response confirmations -->
+            <div class="output-section" style="margin-top:1rem;">
+              <p class="output-label">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                Output example — Confirmation responses
+              </p>
+              <p class="text-xs text-zinc-500 dark:text-zinc-500 mb-3 leading-relaxed">After tapping a button, the original Telegram message is updated in-place with a confirmation. Each outcome has its own response — no new message clutters the chat.</p>
+              <div class="output-grid" style="grid-template-columns:1fr 1fr 1fr;gap:.75rem;">
+                <div>
+                  <div class="output-img-wrap">
+                    <img
+                      src="assets/images/ACCEPT.png"
+                      alt="Telegram — Accept confirmation: Reply Sent Successfully"
+                      loading="lazy"
+                      style="width:100%;display:block;"
+                    />
+                  </div>
+                  <p class="output-caption">✅ Accept — reply sent, status: SENT</p>
+                </div>
+                <div>
+                  <div class="output-img-wrap">
+                    <img
+                      src="assets/images/EDIT.png"
+                      alt="Telegram — Edit confirmation: Manual Review Requested"
+                      loading="lazy"
+                      style="width:100%;display:block;"
+                    />
+                  </div>
+                  <p class="output-caption">✏️ Edit — manual review requested</p>
+                </div>
+                <div>
+                  <div class="output-img-wrap">
+                    <img
+                      src="assets/images/REJECT.png"
+                      alt="Telegram — Reject confirmation: AI Reply Rejected"
+                      loading="lazy"
+                      style="width:100%;display:block;"
+                    />
+                  </div>
+                  <p class="output-caption">❌ Reject — draft discarded, no email sent</p>
+                </div>
+              </div>
+              <p class="output-note">💡 All three outcomes update the Google Sheets <code style="font-size:.75rem;background:#f4f4f5;padding:.1rem .3rem;border-radius:4px;color:#FF6B2B;">Status</code> column immediately — keeping the log in sync with whatever the user decided.</p>
+            </div>
+          </div><!-- end flow-body -->
+          </div></div><!-- end flow-collapsible-inner + flow-collapsible -->
+        </div><!-- end flow-block flow 2 -->
+
+        <!-- FLOW 3 -->
+        <div class="flow-block reveal">
+          <div class="flow-header f3" @click="toggleFlow(3)" :aria-expanded="isOpen(3)">
+            <span class="flow-badge">Flow 3</span>
+            <div>
+              <p class="font-display font-bold text-sm text-white">Morning Briefing — Your Daily Inbox Summary</p>
+              <p class="flow-meta">Runs every morning at 8:00 AM · Reviews yesterday's emails → Delivers summary to Telegram</p>
+            </div>
+            <svg class="flow-toggle-icon w-5 h-5 text-white/70" :class="isOpen(3) ? 'open' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </div>
+          <div class="flow-collapsible" :class="isOpen(3) ? 'open' : ''"><div class="flow-collapsible-inner">
+
+          <img
+            class="flow-screenshot w-full rounded-2xl border border-zinc-200 dark:border-zinc-800"
+            src="assets/images/FLOW3.jpeg"
+            alt="FLOW 3 — Morning Briefing workflow screenshot"
+            loading="lazy"
+          />
+          <div class="flow-body">
+            <p class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">Every morning at 8 AM, this flow reads the previous day's email log from Google Sheets, filters for yesterday's records, sends them to a Groq AI Agent that generates a structured briefing, and delivers it straight to Telegram.</p>
+            <p class="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">Briefing includes</p>
+            <ul class="space-y-1.5 text-sm text-zinc-600 dark:text-zinc-400 mb-5">
+              <li class="flex items-center gap-2"><svg class="w-3.5 h-3.5 text-accent flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/></svg>Total emails processed, with counts per category</li>
+              <li class="flex items-center gap-2"><svg class="w-3.5 h-3.5 text-accent flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/></svg>Urgent items that need immediate attention</li>
+              <li class="flex items-center gap-2"><svg class="w-3.5 h-3.5 text-accent flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/></svg>Pending follow-ups still awaiting a response</li>
+              <li class="flex items-center gap-2"><svg class="w-3.5 h-3.5 text-accent flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/></svg>Important conversations and receipts/payments</li>
+              <li class="flex items-center gap-2"><svg class="w-3.5 h-3.5 text-accent flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="4"/></svg>Final AI-generated executive summary</li>
+            </ul>
+
+            <!-- MORNING BRIEFING OUTPUT -->
+            <div class="output-section">
+              <p class="output-label">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                Output example — Morning Briefing on Telegram
+              </p>
+              <div class="output-grid cols-2" style="display:flex;justify-content:center;">
+                <div>
+ 
+              <div class="output-img-wrap">
+                <img
+                  class="flow-screenshot w-full rounded-2xl border border-zinc-200 dark:border-zinc-800"
+                  src="assets/images/MORNING-BRIEFING.png"
+                  alt="Telegram — Morning Briefing message"
+                  loading="lazy"
+                />
+                <p class="output-caption">Daily briefing delivered at 8:00 AM — urgent items, follow-ups, summary</p>
+              </div>
+                </div>
+              </div>
+              <p class="output-note">💡 The briefing is generated from the Google Sheets log — not from Gmail directly. This means it only includes emails already processed by Flow 1, keeping the data clean and consistent.</p>
+            </div>
+          </div><!-- end flow-body -->
+          </div></div><!-- end flow-collapsible-inner + flow-collapsible -->
+        </div><!-- end flow-block flow 3 -->
+
+        <!-- FLOW 4 -->
+        <div class="flow-block reveal">
+          <div class="flow-header f4" @click="toggleFlow(4)" :aria-expanded="isOpen(4)">
+            <span class="flow-badge">Flow 4</span>
+            <div>
+              <p class="font-display font-bold text-sm text-white">Spam Cleaner — Overnight Inbox Maintenance</p>
+              <p class="flow-meta">Runs nightly at 2:00 AM · Detects spam → Permanently deletes → Sends cleanup report</p>
+            </div>
+            <svg class="flow-toggle-icon w-5 h-5 text-white/70" :class="isOpen(4) ? 'open' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </div>
+          <div class="flow-collapsible" :class="isOpen(4) ? 'open' : ''"><div class="flow-collapsible-inner">
+          <img
+            class="flow-screenshot w-full rounded-2xl border border-zinc-200 dark:border-zinc-800"
+            src="assets/images/FLOW4.jpeg"
+            alt="FLOW 4 — Spam Cleaner workflow screenshot"
+            loading="lazy"
+          />
+          <div class="flow-body">
+            <p class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">While everything else sleeps, this flow quietly clears the clutter. It runs at 2 AM, fetches old spam emails, checks if there's anything to delete, permanently removes them, counts the result, and sends a short cleanup report to Telegram.</p>
+            <p class="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-3">Steps</p>
+            <ol class="space-y-2 mb-5">
+              <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400"><span class="step-badge mt-0.5">1</span>Schedule Trigger fires daily at 2:00 AM</li>
+              <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400"><span class="step-badge mt-0.5">2</span>Gmail — Get old SPAM fetches emails in the spam folder older than 3 days</li>
+              <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400"><span class="step-badge mt-0.5">3</span>Filter — Has Emails to delete checks whether there's anything to act on</li>
+              <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400"><span class="step-badge mt-0.5">4</span>Gmail — Delete SPAM Permanently removes qualifying messages</li>
+              <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400"><span class="step-badge mt-0.5">5</span>Code — Count Deleted SPAM tallies the number removed</li>
+              <li class="flex items-start gap-3 text-sm text-zinc-600 dark:text-zinc-400"><span class="step-badge mt-0.5">6</span>Telegram — SPAM Cleanup Report delivers the nightly summary</li>
+            </ol>
+            <div class="output-section">
+              <p class="output-label">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                Output — Telegram cleanup report
+              </p>
+              <p class="text-xs text-zinc-500 dark:text-zinc-500 mb-3 leading-relaxed">A short summary arrives on Telegram every morning confirming how many spam emails were deleted overnight.</p>
+              <div class="output-grid" style=" grid-template-columns:1fr; max-width:500px; margin:0 auto; " >
+
+              <div class="output-img-wrap">
+                <img
+                  class="flow-screenshot w-full rounded-2xl border border-zinc-200 dark:border-zinc-800"
+                  src="assets/images/Clearnup-Report.png"
+                  alt="Telegram - Spam Cleanup Report"
+                  loading="lazy"
+                />
+                <p class="output-caption">Overnight cleanup report — spam count deleted and confirmation</p>
+              </div>
+              </div>
+            </div>
+          </div><!-- end flow-body -->
+          </div></div><!-- end flow-collapsible-inner + flow-collapsible -->
+        </div><!-- end flow-block flow 4 -->
+
+      </div>
+
+      <!-- REMAINING PROSE -->
+      <div class="max-w-3xl mx-auto px-6 pb-4 prose-cs">
+
+        <h2>Challenges &amp; How We Solved Them</h2>
+
+        <h3>Maintaining User Trust</h3>
+        <p>When AI is drafting emails on your behalf, trust is everything. The solution was a non-negotiable human approval step built into every outgoing reply. No email is ever sent automatically — every AI-generated draft must be explicitly approved through Telegram before it reaches a recipient. You stay in control, and the AI stays a tool, not a decision-maker.</p>
+
+        <h3>Preventing Duplicate Processing</h3>
+        <p>Without a way to track which emails had already been handled, the system could repeatedly re-process the same messages — creating duplicate notifications and cluttered logs. The fix: every processed email gets an "AI-Processed" label applied and is marked as read automatically. This ensures each email is touched exactly once, keeping everything clean and consistent.</p>
+
+        <h2>Results &amp; Business Impact</h2>
+        <p>Since deploying this system, the inbox has gone from a daily time sink to a managed, low-effort task. Here's the real-world impact:</p>
+      </div>
+
+      <!-- RESULTS STAT CARDS -->
+      <div class="max-w-3xl mx-auto px-6 pb-12">
+        <div class="reveal grid md:grid-cols-2 gap-4">
+          <div class="stat-card bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-7 pl-8">
+            <p class="font-display font-bold text-2xl text-zinc-900 dark:text-white mb-1">Hours saved weekly</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">Manual inbox management time dropped dramatically — from multiple daily check-ins to a single morning review.</p>
+          </div>
+          <div class="stat-card bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-7 pl-8">
+            <p class="font-display font-bold text-2xl text-zinc-900 dark:text-white mb-1">Faster response workflow</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">AI-drafted replies are ready within minutes of an email arriving. Approving takes seconds instead of writing from scratch.</p>
+          </div>
+          <div class="stat-card bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-7 pl-8">
+            <p class="font-display font-bold text-2xl text-zinc-900 dark:text-white mb-1">Zero repetitive tasks</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">Sorting, labeling, deleting spam, and writing standard replies are now fully automated — no manual effort required.</p>
+          </div>
+          <div class="stat-card bg-zinc-50 dark:bg-zinc-900 rounded-2xl p-7 pl-8">
+            <p class="font-display font-bold text-2xl text-zinc-900 dark:text-white mb-1">Lower decision fatigue</p>
+            <p class="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">Instead of processing a chaotic inbox, you get a clean morning briefing with only what needs your attention — reducing mental overhead significantly.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="max-w-3xl mx-auto px-6 pb-4 prose-cs">
+
+        <h2>Tech Stack</h2>
+        <ul>
+          <li><strong>n8n</strong> — the automation platform that runs all four workflows and handles scheduling</li>
+          <li><strong>Gmail</strong> — inbox access, email labeling, reply threading, and spam management</li>
+          <li><strong>Groq AI</strong> — powers email classification, prioritization, and reply generation</li>
+          <li><strong>Telegram</strong> — delivers real-time notifications and handles one-tap approval buttons</li>
+          <li><strong>Google Sheets</strong> — shared activity log that tracks every processed email across all workflows</li>
+        </ul>
+
+        <h2>Key Learnings</h2>
+        <ul>
+          <li>AI-assisted workflows dramatically reduce manual overhead when designed around real user behavior</li>
+          <li>Human-in-the-loop automation builds trust — users adopt tools faster when they stay in control</li>
+          <li>Connecting multiple services (email, messaging, AI, spreadsheets) creates compounding productivity gains</li>
+          <li>Modular automation architecture makes the system easier to update, scale, and troubleshoot over time</li>
+          <li>Edge case handling (duplicates, empty results, missing fields) is what separates a reliable system from a fragile one</li>
+        </ul>
+
+        <h2>Product Roadmap — Future Improvements</h2>
+        <ul>
+          <li>Priority scoring with a weighted urgency model based on sender history and keywords</li>
+          <li>Smart follow-up reminders for threads that haven't received a reply within N days</li>
+          <li>Multi-account support across multiple inboxes</li>
+          <li>A web dashboard to replace the Telegram control interface</li>
+          <li>Sentiment detection to surface emotionally urgent emails before they get buried</li>
+        </ul>
+
+        <hr>
+        <p><em>Interested in a similar system for your business? <a href="index.html#contact">Get in touch</a> — I'm available for new projects.</em></p>
+
+      </div>
+
+    </article>
+
+    <!-- MORE PROJECTS -->
+    <section class="bg-zinc-50 dark:bg-zinc-900/50 py-16">
+      <div class="max-w-6xl mx-auto px-6">
+        <div class="flex items-center justify-between mb-8">
+          <h2 class="font-display font-bold text-2xl text-zinc-900 dark:text-white">More projects</h2>
+          <a href="projects.html" class="text-sm font-medium text-accent nl hidden md:block">View all →</a>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6">
+          <article class="reveal card-h group bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800 hover:border-accent transition-colors">
+            <div class="pf w-full h-44">
+              <img src="assets/images/proj1.png" alt="AI Email Management" loading="lazy">
+            </div>
+            <div class="p-5">
+              <div class="flex gap-2 mb-2">
+                <span class="text-xs bg-orange-50 dark:bg-zinc-800 text-accent border border-orange-200 dark:border-zinc-700 px-2.5 py-1 rounded-full">n8n</span>
+                <span class="text-xs bg-orange-50 dark:bg-zinc-800 text-accent border border-orange-200 dark:border-zinc-700 px-2.5 py-1 rounded-full">Telegram</span>
+              </div>
+              <a href="case-study-email-management.html">
+                <h3 class="font-display font-bold text-base text-zinc-900 dark:text-white mb-2 group-hover:text-accent transition-colors">AI Email Management System</h3>
+              </a>
+              <a href="case-study-email-management.html" class="text-sm font-medium text-accent nl">View project →</a>
+            </div>
+          </article>
+        </div>
+        <div class="text-center mt-8 md:hidden">
+          <a href="projects.html" class="text-sm font-medium text-accent">View all projects →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="py-24">
+      <div class="max-w-6xl mx-auto px-6">
+        <div class="bg-zinc-900 dark:bg-zinc-800 rounded-3xl p-10 md:p-14 text-center relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-64 h-64 bg-accent/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute bottom-0 left-0 w-40 h-40 bg-accent/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="relative z-10">
+            <p class="text-xs font-medium text-accent tracking-widest uppercase mb-4">Ready to start?</p>
+            <h2 class="font-display font-bold text-3xl md:text-4xl text-white mb-4">Got a similar project?</h2>
+            <p class="text-zinc-400 max-w-md mx-auto mb-8">I'm available for new projects. Tell me about what you're building and let's see if we're a good fit.</p>
+            <a href="index.html#contact" class="inline-flex items-center gap-2 shimmer bg-accent text-white font-medium px-8 py-3.5 rounded-full hover:bg-accent-light transition-colors">Start a project →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('flowAccordion', () => ({
+        openFlows: new Set(),
+        isOpen(n) { return this.openFlows.has(n); },
+        toggleFlow(n) {
+          if (this.openFlows.has(n)) {
+            this.openFlows.delete(n);
+          } else {
+            this.openFlows.add(n);
+          }
+          this.openFlows = new Set(this.openFlows); // trigger reactivity
+        }
+      }));
+    });
+  </script>
+  <script>
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    document.getElementById('yr').textContent = new Date().getFullYear();
+  </script>
+
+</body>
+</html>

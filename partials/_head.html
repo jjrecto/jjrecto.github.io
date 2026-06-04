@@ -1,0 +1,47 @@
+<!--
+  _head.html — Shared <head> snippet
+  ============================================================
+  Copy this block into every page's <head>.
+  Replace the three <!-- PAGE: --> comments with page-specific values.
+  ============================================================
+
+  <!-- PAGE: title -->
+  <title>Jon — Freelance AI Automation Specialist</title>
+
+  <!-- PAGE: description -->
+  <meta name="description" content="Jon — Freelance AI Automation Specialist">
+
+  <!-- PAGE: og tags (optional) -->
+  <meta property="og:title" content="Jon — Freelance AI Automation Specialist">
+  <meta property="og:description" content="I help businesses save time through AI-powered workflows.">
+  <meta property="og:type" content="website">
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="Jon">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          display: ['PT Sans', 'sans-serif'],
+          body:    ['DM Sans',  'sans-serif']
+        },
+        colors: {
+          accent:        '#FF6B2B',
+          'accent-light':'#FF8F5C'
+        }
+      }
+    }
+  }
+</script>
